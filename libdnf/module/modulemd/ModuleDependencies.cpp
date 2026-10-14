@@ -21,6 +21,11 @@
 #include "libdnf/utils/utils.hpp"
 #include "ModuleDependencies.hpp"
 
+#include <glib-object.h>
+#ifdef WITH_MODULEMD
+#include <modulemd-2.0/modulemd.h>
+#endif
+
 namespace libdnf {
 
 ModuleDependencies::ModuleDependencies() : dependencies(nullptr) {}
@@ -58,6 +63,7 @@ ModuleDependencies::~ModuleDependencies()
     }
 }
 
+#ifdef WITH_MODULEMD
 std::vector<std::map<std::string, std::vector<std::string>>> ModuleDependencies::getRequires() const
 {
     if (!dependencies) {
@@ -84,5 +90,12 @@ std::vector<std::map<std::string, std::vector<std::string>>> ModuleDependencies:
 
     return resultRequires;
 }
+#else
+// Without libmodulemd no dependencies are ever loaded
+std::vector<std::map<std::string, std::vector<std::string>>> ModuleDependencies::getRequires() const
+{
+    return {};
+}
+#endif
 
 }

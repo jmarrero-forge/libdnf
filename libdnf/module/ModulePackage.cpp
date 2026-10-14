@@ -30,6 +30,9 @@ extern "C" {
 
 #include "ModulePackage.hpp"
 #include "modulemd/ModuleProfile.hpp"
+#ifdef WITH_MODULEMD
+#include <modulemd-2.0/modulemd.h>
+#endif
 #include "libdnf/utils/File.hpp"
 #include "libdnf/dnf-sack-private.hpp"
 #include "libdnf/repo/Repo-private.hpp"
@@ -205,6 +208,7 @@ void ModulePackage::createDependencies(Solvable *solvable) const
     }
 }
 
+#ifdef WITH_MODULEMD
 std::vector<std::string> ModulePackage::getRequires(ModulemdModuleStream * mdStream, bool removePlatform)
 {
     std::vector<std::string> dependencies_result;
@@ -280,6 +284,7 @@ std::string ModulePackage::getName() const
     auto name = modulemd_module_stream_get_module_name(mdStream);
     return name ? name : "";
 }
+#endif
 
 /**
  * @brief Return module $name:$stream:$version.
@@ -298,6 +303,7 @@ const std::string & ModulePackage::getRepoID() const
     return repoID;
 }
 
+#ifdef WITH_MODULEMD
 /**
  * @brief Return module $stream.
  *
@@ -366,6 +372,7 @@ std::string ModulePackage::getArch() const
     auto arch = modulemd_module_stream_get_arch(mdStream);
     return arch ? arch : "";
 }
+#endif
 
 /**
  * @brief Return module $name:$stream:$version:$context:$arch.
@@ -380,6 +387,7 @@ std::string ModulePackage::getFullIdentifier() const
     return ss.str();
 }
 
+#ifdef WITH_MODULEMD
 /**
  * @brief Return module $summary.
  *
@@ -528,6 +536,7 @@ std::vector<ModuleDependencies> ModulePackage::getModuleDependencies() const
 
     return dependencies;
 }
+#endif
 
 /**
  * @brief Add conflict with a module stream represented as a ModulePackage.
@@ -692,6 +701,7 @@ ModulePackage::createPlatformSolvable(DnfSack * sack, DnfSack * moduleSack,
     return id;
 }
 
+#ifdef WITH_MODULEMD
 std::string ModulePackage::getNameStream(ModulemdModuleStream * mdStream)
 {
     std::ostringstream ss;
@@ -700,5 +710,34 @@ std::string ModulePackage::getNameStream(ModulemdModuleStream * mdStream)
     ss << (name ? name : "") << ":" << (stream ? stream : "");
     return ss.str();
 }
+#else
+// Without libmodulemd ModuleMetadata never creates a ModulePackage, so these
+// accessors are unreachable.
+std::vector<std::string> ModulePackage::getRequires(ModulemdModuleStream * mdStream, bool removePlatform) { return {}; }
+std::string ModulePackage::getNameStream(ModulemdModuleStream * mdStream) { return {}; }
+std::string ModulePackage::getYaml() const { return {}; }
+bool ModulePackage::getStaticContext() const { return false; }
+const char * ModulePackage::getNameCStr() const { return nullptr; }
+std::string ModulePackage::getName() const { return {}; }
+const char * ModulePackage::getStreamCStr() const { return nullptr; }
+std::string ModulePackage::getStream() const { return {}; }
+std::string ModulePackage::getVersion() const { return {}; }
+long long ModulePackage::getVersionNum() const { return 0; }
+const char * ModulePackage::getContextCStr() const { return nullptr; }
+std::string ModulePackage::getContext() const { return {}; }
+const char * ModulePackage::getArchCStr() const { return nullptr; }
+std::string ModulePackage::getArch() const { return {}; }
+std::string ModulePackage::getSummary() const { return {}; }
+std::string ModulePackage::getDescription() const { return {}; }
+std::vector<std::string> ModulePackage::getArtifacts() const { return {}; }
+std::vector<std::string> ModulePackage::getDemodularizedRpms() const { return {}; }
+std::vector<ModuleProfile> ModulePackage::getProfiles(const std::string &name) const { return {}; }
+std::vector<ModuleProfile> ModulePackage::getProfiles() const { return {}; }
+ModuleProfile ModulePackage::getDefaultProfile() const
+{
+    throw std::runtime_error("No default profile found for " + getFullIdentifier());
+}
+std::vector<ModuleDependencies> ModulePackage::getModuleDependencies() const { return {}; }
+#endif
 
 }

@@ -26,7 +26,8 @@
 #include <string>
 #include <vector>
 
-#include <modulemd-2.0/modulemd.h>
+// Forward declaration so that libmodulemd stays optional (WITH_MODULEMD)
+typedef struct _ModulemdProfile ModulemdProfile;
 
 namespace libdnf {
 

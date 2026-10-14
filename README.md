@@ -26,6 +26,10 @@ From the checkout dir:
     cmake .. -DPYTHON_DESIRED=3
     make
 
+To build without libmodulemd, pass `-DWITH_MODULEMD=OFF` to cmake. Modular
+metadata in repositories is then ignored and modular packages are treated like
+any other package.
+
 Building the documentation, from the build/ directory::
 
     make doc

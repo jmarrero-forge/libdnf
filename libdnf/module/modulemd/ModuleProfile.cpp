@@ -20,6 +20,11 @@
 
 #include "ModuleProfile.hpp"
 
+#include <glib-object.h>
+#ifdef WITH_MODULEMD
+#include <modulemd-2.0/modulemd.h>
+#endif
+
 namespace libdnf {
 
 ModuleProfile::ModuleProfile(ModulemdProfile *profile)
@@ -55,6 +60,7 @@ ModuleProfile::~ModuleProfile()
     }
 }
 
+#ifdef WITH_MODULEMD
 std::string ModuleProfile::getName() const
 {
     if (!profile) {
@@ -97,5 +103,12 @@ std::vector<std::string> ModuleProfile::getContent() const
 
     return rpms;
 }
+#else
+// Without libmodulemd no profile is ever loaded
+std::string ModuleProfile::getName() const { return {}; }
+bool ModuleProfile::isDefault() const { return false; }
+std::string ModuleProfile::getDescription() const { return {}; }
+std::vector<std::string> ModuleProfile::getContent() const { return {}; }
+#endif
 
 }

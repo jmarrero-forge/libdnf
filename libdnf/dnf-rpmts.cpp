@@ -55,6 +55,11 @@
 static gboolean
 test_fail_safe(Header * hdr, DnfPackage * pkg, GError **error)
 {
+#ifndef WITH_MODULEMD
+    // Without libmodulemd modular packages are not filtered, so they are
+    // installed like any other package
+    return TRUE;
+#else
     if (dnf_package_installed(pkg)) {
         return TRUE;
     }
@@ -86,6 +91,7 @@ test_fail_safe(Header * hdr, DnfPackage * pkg, GError **error)
     rpmtdFreeData(td);
     rpmtdFree(td);
     return ret;
+#endif
 }
 
 static gboolean

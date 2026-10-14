@@ -48,10 +48,17 @@
 %bcond_without zchunk
 %endif
 
+%if 0%{?rhel} >= 11
+%bcond_with modulemd
+%else
+%bcond_without modulemd
+%endif
+
 %bcond_with sanitizers
 
 %global _cmake_opts \\\
     -DENABLE_RHSM_SUPPORT=%{?with_rhsm:ON}%{!?with_rhsm:OFF} \\\
+    -DWITH_MODULEMD=%{?with_modulemd:ON}%{!?with_modulemd:OFF} \\\
     %{nil}
 
 Name:           libdnf
@@ -83,7 +90,9 @@ BuildRequires:  pkgconfig(zck) >= 0.9.11
 BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(cppunit)
+%if %{with modulemd}
 BuildRequires:  pkgconfig(modulemd-2.0) >= %{libmodulemd_version}
+%endif
 BuildRequires:  pkgconfig(smartcols)
 BuildRequires:  gettext
 
@@ -93,7 +102,9 @@ BuildRequires:  liblsan
 BuildRequires:  libubsan
 %endif
 
+%if %{with modulemd}
 Requires:       libmodulemd%{?_isa} >= %{libmodulemd_version}
+%endif
 Requires:       libsolv%{?_isa} >= %{libsolv_version}
 Requires:       librepo%{?_isa} >= %{librepo_version}
 %if 0%{?fedora} >= 43 || 0%{?rhel} >= 11

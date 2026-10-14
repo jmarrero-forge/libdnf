@@ -22,6 +22,13 @@
 
 #include "../ModulePackageContainer.hpp"
 
+#include <glib-object.h>
+#ifdef WITH_MODULEMD
+#include <modulemd-2.0/modulemd.h>
+#else
+#include <mutex>
+#endif
+
 #include "bgettext/bgettext-lib.h"
 #include "tinyformat/tinyformat.hpp"
 #include "../../log.hpp"
@@ -72,6 +79,7 @@ ModuleMetadata::~ModuleMetadata()
     }
 }
 
+#ifdef WITH_MODULEMD
 void ModuleMetadata::addMetadataFromString(const std::string & yaml, int priority)
 {
     GError *error = NULL;
@@ -229,5 +237,42 @@ ModulemdObsoletes * ModuleMetadata::getNewestActiveObsolete(ModulePackage *modul
 
     return modulemd_module_stream_v2_get_obsoletes_resolved(MODULEMD_MODULE_STREAM_V2(myStream));
 }
+#else
+// Without libmodulemd the modular metadata is ignored: no modules are ever
+// available, and modular RPMs are therefore not filtered out of the sack.
+void ModuleMetadata::addMetadataFromString(const std::string & yaml, int priority)
+{
+    static std::once_flag warned;
+    std::call_once(warned, [] {
+        auto logger(libdnf::Log::getLogger());
+        logger->warning(_("Ignoring modular metadata, libdnf was built without libmodulemd"));
+    });
+}
+
+void ModuleMetadata::resolveAddedMetadata() {}
+
+std::vector<ModulePackage *> ModuleMetadata::getAllModulePackages(DnfSack * moduleSack,
+                                                                  LibsolvRepo * repo,
+                                                                  const std::string & repoID,
+                                                                  std::vector<std::tuple<LibsolvRepo *, ModulemdModuleStream *, std::string>> & modulesV2)
+{
+    return {};
+}
+
+std::map<std::string, std::string> ModuleMetadata::getDefaultStreams()
+{
+    return {};
+}
+
+std::vector<std::string> ModuleMetadata::getDefaultProfiles(std::string moduleName, std::string moduleStream)
+{
+    return {};
+}
+
+ModulemdObsoletes * ModuleMetadata::getNewestActiveObsolete(ModulePackage *modulePkg)
+{
+    return nullptr;
+}
+#endif
 
 }

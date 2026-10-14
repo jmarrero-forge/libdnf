@@ -30,6 +30,9 @@
 #include "libdnf/repo/solvable/Package.hpp"
 #include "../goal/IdQueue.hpp"
 
+// Forward declaration so that libmodulemd stays optional (WITH_MODULEMD)
+typedef struct _ModulemdModuleStream ModulemdModuleStream;
+
 namespace libdnf {
 
 class ModulePackage // TODO inherit in future; : public Package

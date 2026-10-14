@@ -48,6 +48,9 @@ extern "C" {
 #include "tinyformat/tinyformat.hpp"
 #include "modulemd/ModuleMetadata.hpp"
 #include "modulemd/ModuleProfile.hpp"
+#ifdef WITH_MODULEMD
+#include <modulemd-2.0/modulemd.h>
+#endif
 
 
 namespace {
@@ -1845,6 +1848,7 @@ void ModulePackageContainer::updateFailSafeData()
 }
 
 void ModulePackageContainer::applyObsoletes(){
+#ifdef WITH_MODULEMD
     for (const auto &iter : pImpl->modules) {
         auto modulePkg = iter.second.get();
         if (!isEnabled(modulePkg)) {
@@ -1878,6 +1882,7 @@ void ModulePackageContainer::applyObsoletes(){
             }
         }
     }
+#endif
 }
 
 }
