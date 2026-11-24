@@ -46,6 +46,7 @@
 #include "utils/bgettext/bgettext-lib.h"
 #include "dnf-package.h"
 
+#ifdef LIBDNF_WITH_MODULEMD
 // older RPM doesn't have RPMTAG_MODULARITYLABEL defined
 #ifndef RPMTAG_MODULARITYLABEL
 #define RPMTAG_MODULARITYLABEL 5096
@@ -68,7 +69,6 @@ test_fail_safe(Header * hdr, DnfPackage * pkg, GError **error)
     } else {
         return TRUE;
     }
-#ifdef WITH_MODULEMD
     rpmtd td = rpmtdNew();
     gboolean ret = TRUE;
     if (headerGet(*hdr, RPMTAG_MODULARITYLABEL, td, HEADERGET_MINMEM)) {
@@ -87,12 +87,8 @@ test_fail_safe(Header * hdr, DnfPackage * pkg, GError **error)
     rpmtdFreeData(td);
     rpmtdFree(td);
     return ret;
-#else
-    // Without libmodulemd no module metadata is ever loaded, so every
-    // package is non-modular, whatever its modularity label says.
-    return TRUE;
-#endif
 }
+#endif
 
 static gboolean
 result_is_accepted(gint result, gboolean allow_untrusted, const gchar *filename, GError **error) {
@@ -220,12 +216,14 @@ dnf_rpmts_add_install_filename2(rpmts ts,
         ret = FALSE;
         goto out;
     }
+#ifdef LIBDNF_WITH_MODULEMD
     if (pkg) {
         if (!test_fail_safe(&hdr, pkg, error)) {
             ret = FALSE;
             goto out;
         }
     }
+#endif
 
     /* add to the transaction */
     res = rpmtsAddInstallElement(ts, hdr, (fnpyKey) filename, is_update, NULL);

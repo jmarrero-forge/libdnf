@@ -4,8 +4,7 @@
 #include <cppunit/TestCase.h>
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "libdnf/dnf-sack.h"
-#include "libdnf/hy-types.h"
+#include "libdnf/dnf-context.h"
 
 // Tests for a build without libmodulemd (WITH_MODULEMD=OFF)
 class NoModulemdTest : public CppUnit::TestCase
@@ -21,9 +20,7 @@ public:
     void testModularMetadataIgnored();
 
 private:
-    DnfSack *sack = nullptr;
-    HyRepo repo = nullptr;
-    char *tmpdir = nullptr;
+    DnfContext *context = nullptr;
 };
 
 #endif /* LIBDNF_NOMODULEMDTEST_HPP */

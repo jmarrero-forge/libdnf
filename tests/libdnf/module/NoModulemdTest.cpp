@@ -1,50 +1,54 @@
 #include "NoModulemdTest.hpp"
 
-#include "libdnf/dnf-sack-private.hpp"
-#include "libdnf/hy-iutil-private.hpp"
-#include "libdnf/module/ModulePackageContainer.hpp"
+#include "libdnf/dnf-context.hpp"
+#include "libdnf/dnf-repo-loader.h"
+#include "libdnf/sack/packageset.hpp"
 #include "libdnf/sack/query.hpp"
+
+#include <memory>
 
 CPPUNIT_TEST_SUITE_REGISTRATION(NoModulemdTest);
 
-#define UNITTEST_DIR "/tmp/libdnfXXXXXX"
-
 void NoModulemdTest::setUp()
 {
-    g_autoptr(GError) error = nullptr;
-
-    tmpdir = g_strdup(UNITTEST_DIR);
-    CPPUNIT_ASSERT(mkdtemp(tmpdir));
-
-    sack = dnf_sack_new();
-    dnf_sack_set_cachedir(sack, tmpdir);
-    dnf_sack_set_arch(sack, "x86_64", NULL);
-    dnf_sack_setup(sack, 0, NULL);
-    // Its only packages are modular, from the streams in modules.yaml.gz
-    repo = hy_repo_create("test_advisory_repo");
-    std::string repodata = std::string(TESTDATADIR "/advisories/repodata/");
-    hy_repo_set_string(repo, HY_REPO_MD_FN, (repodata + "repomd.xml").c_str());
-    hy_repo_set_string(repo, HY_REPO_PRIMARY_FN, (repodata + "primary.xml.gz").c_str());
-    hy_repo_set_string(repo, MODULES_FN, (repodata + "modules.yaml.gz").c_str());
-    CPPUNIT_ASSERT(dnf_sack_load_repo(sack, repo, 0, &error));
+    dnf_context_set_config_file_path("");
+    context = dnf_context_new();
 }
 
 void NoModulemdTest::tearDown()
 {
-    dnf_remove_recursive_v2(tmpdir, NULL);
-    delete repo;
-    g_object_unref(sack);
-    g_free(tmpdir);
+    g_object_unref(context);
 }
 
+// The repository ContextTest filters by its module metadata, which is ignored
+// here: its modular packages are available like any other.
 void NoModulemdTest::testModularMetadataIgnored()
 {
-    dnf_sack_filter_modules_v2(sack, nullptr, nullptr, tmpdir, "platform_id:f33", false, false, false);
+    g_autoptr(GError) error = nullptr;
 
-    // No module streams are loaded, so nothing is filtered: with libmodulemd,
-    // these packages would be excluded since none of their streams is enabled.
-    CPPUNIT_ASSERT(dnf_sack_get_module_container(sack)->empty());
-    libdnf::Query query(sack);
-    query.addFilter(HY_PKG_NAME, HY_EQ, "test-perl-DBI");
-    CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(2), query.size());
+    dnf_context_set_release_ver(context, "26");
+    dnf_context_set_arch(context, "x86_64");
+    dnf_context_set_install_root(context, TESTDATADIR "/modules/");
+    g_autoptr(DnfLock) lock = dnf_lock_new();
+    dnf_lock_set_lock_dir(lock, "/tmp");
+    dnf_context_set_repo_dir(context, TESTDATADIR "/modules/yum.repos.d/");
+    dnf_context_set_solv_dir(context, "/tmp");
+    CPPUNIT_ASSERT(dnf_context_setup(context, nullptr, &error));
+
+    DnfRepo * repo = dnf_repo_loader_get_repo_by_id(dnf_context_get_repo_loader(context), "test", &error);
+    CPPUNIT_ASSERT(repo);
+    g_autoptr(DnfState) state = dnf_state_new();
+    dnf_repo_check(repo, G_MAXUINT, state, &error);
+    g_clear_error(&error);
+
+    CPPUNIT_ASSERT(dnf_context_setup_sack(context, dnf_context_get_state(context), &error));
+    auto sack = dnf_context_get_sack(context);
+    CPPUNIT_ASSERT(!std::unique_ptr<libdnf::PackageSet>(dnf_sack_get_module_excludes(sack)));
+
+    // from a stream that isn't enabled, excluded with modularity
+    libdnf::Query query{sack};
+    query.addFilter(HY_PKG_NEVRA_STRICT, HY_EQ, "httpd-2.2.10-1.x86_64");
+    CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), query.size());
+
+    CPPUNIT_ASSERT(dnf_context_install(context, "httpd-2.4.25-8.x86_64", &error));
 }

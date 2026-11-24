@@ -406,7 +406,7 @@ std::string Repo::getCompsFn() {
 }
 
 
-#ifdef MODULEMD
+#ifdef LIBDNF_WITH_MODULEMD
 std::string Repo::getModulesFn() { return pImpl->getMetadataPath(MD_TYPE_MODULES); }
 #endif
 
@@ -456,7 +456,7 @@ std::unique_ptr<LrHandle> Repo::Impl::lrHandleInitBase()
     auto loadFilelists = std::find(optionalMetadataTypes.begin(), optionalMetadataTypes.end(), "filelists") !=
                          optionalMetadataTypes.end();
 
-#ifdef MODULEMD
+#ifdef LIBDNF_WITH_MODULEMD
     dlist.push_back(MD_TYPE_MODULES);
 #endif
     if (loadFilelists) {

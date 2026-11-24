@@ -17,6 +17,11 @@ endif()
 # The libdnf API is under development now. This enables it for internal usage.
 set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-DLIBDNF_UNSTABLE_API")
 
+# SWIG doesn't follow #include, so it needs to be told what dnf-version.h says
+if(WITH_MODULEMD)
+    set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-DLIBDNF_WITH_MODULEMD")
+endif()
+
 function(libdnf_swig_module name)
     set(source ../swig/${name}.i)
     set_source_files_properties(${source} PROPERTIES CPLUSPLUS ON)
@@ -33,7 +38,9 @@ endfunction()
 libdnf_swig_module(error libdnf ${PYTHON_LIBRARY})
 libdnf_swig_module(common_types libdnf ${PYTHON_LIBRARY})
 libdnf_swig_module(conf libdnf ${PYTHON_LIBRARY})
-libdnf_swig_module(module libdnf ${PYTHON_LIBRARY})
+if(WITH_MODULEMD)
+    libdnf_swig_module(module libdnf ${PYTHON_LIBRARY})
+endif()
 libdnf_swig_module(repo libdnf ${PYTHON_LIBRARY})
 libdnf_swig_module(smartcols libdnf ${PYTHON_LIBRARY})
 libdnf_swig_module(transaction libdnf ${PYTHON_LIBRARY})

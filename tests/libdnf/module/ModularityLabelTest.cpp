@@ -34,14 +34,14 @@ void ModularityLabelTest::setUp()
 void ModularityLabelTest::tearDown()
 {
     dnf_remove_recursive_v2(tmpdir, NULL);
-    delete repo;
+    hy_repo_free(repo);
     g_object_unref(sack);
     g_free(tmpdir);
 }
 
 // Adding a package with a modularity label to an RPM transaction: with
-// libmodulemd it is refused unless its module stream is enabled, without it
-// the package is treated as non-modular and accepted.
+// modularity it is refused unless an enabled module stream includes it,
+// without it the package is treated as non-modular and accepted.
 void ModularityLabelTest::testInstallLabelledPackage()
 {
     g_autoptr(GError) error = nullptr;
@@ -57,15 +57,17 @@ void ModularityLabelTest::testInstallLabelledPackage()
     g_autoptr(DnfRepo) dnfRepo = dnf_repo_new(context);
     dnf_package_set_repo(pkg, dnfRepo);
 
-    // No module stream is enabled
+#ifdef LIBDNF_WITH_MODULEMD
+    // Load the module metadata, with no module stream enabled
     dnf_sack_filter_modules_v2(sack, nullptr, nullptr, tmpdir, "platform_id:f33", false, false, false);
+#endif
 
     // The same package as in the repository, plus a modularity label
     const char * labelled = TESTDATADIR "/modularity-label/test-perl-DBI-1-2.module_el8+6587+9879afr5.x86_64.rpm";
     rpmts ts = rpmtsCreate();
     gboolean ret = dnf_rpmts_add_install_filename2(ts, labelled, TRUE, FALSE, pkg, &error);
     rpmtsFree(ts);
-#ifdef WITH_MODULEMD
+#ifdef LIBDNF_WITH_MODULEMD
     CPPUNIT_ASSERT(!ret);
     CPPUNIT_ASSERT(error);
     CPPUNIT_ASSERT(strstr(error->message, "No available modular metadata"));

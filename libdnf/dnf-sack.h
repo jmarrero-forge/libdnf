@@ -169,8 +169,10 @@ gboolean     dnf_sack_load_repo             (DnfSack        *sack,
                                              GError        **error);
 Pool        *dnf_sack_get_pool              (DnfSack    *sack);
 
+#ifdef LIBDNF_WITH_MODULEMD
 void dnf_sack_filter_modules(DnfSack *sack, GPtrArray *repos, const char *install_root,
     const char * platformModule);
+#endif
 
 
 /**********************************************************************/
